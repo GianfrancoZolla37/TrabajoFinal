@@ -1,0 +1,376 @@
+---
+title: "KKKK"
+author: "Gianfranco Zolla"
+date: "12/5/2022"
+output: html_document
+
+    
+---
+
+
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo=FALSE}
+AccesoRural = read.csv("https://raw.githubusercontent.com/GianfrancoZolla37/TrabajoFinal/main/AccesoRuralElectricidad.csv")
+
+```
+
+
+```{r, echo=FALSE}
+AccesoRural=AccesoRural[-c(2,3,10,40,43,63:66,75:79,83,101,102,106,108:111,132:135,137,144:146,160:163,180,184,185,187,188,198,199,217,221,222,230:232,255,263,267:271),-c(3:4)]
+```
+
+```{r, echo=FALSE}
+AccesoRural[AccesoRural ==  ".." ] = NA
+
+
+
+```
+
+
+
+
+
+```{r, echo=FALSE}
+colnames(AccesoRural) = c("PAÍS","CÓDIGOS PAÍS","NUM")
+
+```
+
+
+```{r, echo=FALSE}
+AccesoRural$NUM=as.numeric(AccesoRural$NUM)
+```
+
+
+
+
+```{r, echo=FALSE}
+DataUrbana = read.csv("https://raw.githubusercontent.com/GianfrancoZolla37/TrabajoFinal/main/AccesoUrbanoElectricidad.csv")
+
+```
+
+
+
+```{r, echo=FALSE}
+DataUrbana=DataUrbana [-c(2,3,10,40,43,63:66,75:79,83,101,102,106,108:111,132:135,137,144:146,160:163,180,184,185,187,188,198,199,217,221,222,230:232,255,263,267:271),-c(3:4)]
+```
+
+
+
+
+
+
+```{r, echo=FALSE}
+DataUrbana[DataUrbana ==  ".." ] = NA
+```
+
+
+
+```{r, echo=FALSE}
+colnames(DataUrbana) = c("PAÍS","CÓDIGOS PAÍS","NUM")
+```
+
+
+```{r, echo=FALSE}
+DataUrbana$NUM=as.numeric(DataUrbana$NUM)
+```
+
+
+
+
+
+```{r, echo=FALSE}
+TecnoLimpia = read.csv("https://raw.githubusercontent.com/GianfrancoZolla37/TrabajoFinal/main/AccesoTecnolog%C3%ADaLimpia.csv")
+```
+
+```{r, echo=FALSE}
+TecnoLimpia=TecnoLimpia[-c(2,3,10,40,43,63:66,75:79,83,101,102,106,108:111,132:135,137,144:146,160:163,180,184,185,187,188,198,199,217,221,222,230:232,255,263,267:271),-c(3:4)]
+```
+
+
+
+```{r, echo=FALSE}
+TecnoLimpia[TecnoLimpia ==  ".." ] = NA
+```
+
+
+
+```{r, echo=FALSE}
+colnames(TecnoLimpia) = c("PAÍS","CÓDIGOS PAÍS","NUM")
+```
+
+
+```{r, echo=FALSE}
+TecnoLimpia$NUM=as.numeric(TecnoLimpia$NUM)
+```
+
+
+
+
+
+
+```{r, echo=FALSE}
+DataP = merge(AccesoRural, DataUrbana, by = c("PAÍS","CÓDIGOS PAÍS"))
+```
+
+
+```{r, echo=FALSE}
+DataP = merge(DataP, TecnoLimpia, by = c("PAÍS","CÓDIGOS PAÍS"))
+```
+
+```{r, echo=FALSE}
+colnames(DataP) = c("PAÍS","CÓDIGOS PAÍS","AccesoRural", "DataUrbana", "TecnoLimpia")
+```
+
+
+
+```{r, echo=FALSE}
+DataP = na.omit(DataP)
+```
+
+
+```{r, echo=FALSE}
+model0 = formula(TecnoLimpia~DataUrbana+AccesoRural)
+```
+
+
+
+
+
+```{r, echo=FALSE}
+rg1=lm(model0,data=DataP)
+summary(rg1)
+```
+
+```{r, echo=FALSE}
+install.packages("stargazer")
+```
+
+```{r, echo=FALSE}
+library(stargazer)
+reg1=lm(model0,data=DataP)
+stargazer(reg1, type = "text")
+
+```
+
+
+```{r, echo=FALSE}
+Basilea=data.frame(DataP$AccesoRural, DataP$DataUrbana)
+
+```
+
+
+```{r, echo=FALSE}
+Basilea=DataP[,c(3:4)]
+row.names(Basilea)=DataP$PAÍS
+
+```
+
+
+
+```{r, echo=FALSE}
+boxplot(Basilea,horizontal=T,las=2,cex.axis=0.3)
+
+```
+
+```{r, echo=FALSE}
+boxplot(log(Basilea),horizontal=T,las=2,cex.axis=0.3)
+boxplot(scale(Basilea),horizontal=T,las=2,cex.axis=0.3)
+
+```
+```{r, echo=FALSE}
+library(cluster)
+Basilea = data.frame(scale(Basilea))
+set.seed(123)
+g.dist = daisy(Basilea, metric="gower")
+
+```
+
+```{r, echo=FALSE}
+library(factoextra)
+library(fpc)
+fviz_nbclust(Basilea, pam,diss=g.dist,method = "gap_stat",k.max = 10,verbose = F)
+
+```
+```{r, echo=FALSE}
+fviz_nbclust(Basilea, hcut,diss=g.dist,method = "gap_stat",k.max = 10,verbose = F,hc_func = "agnes")
+
+```
+
+```{r, echo=FALSE}
+fviz_nbclust(Basilea, hcut,diss=g.dist,method = "gap_stat",k.max = 10,verbose = F,hc_func = "diana")
+
+```
+
+```{r, echo=FALSE}
+set.seed(123)
+res.pam=pam(g.dist,k = 5,cluster.only = F)
+Basilea$pam=res.pam$cluster
+
+```
+
+```{r, echo=FALSE}
+res.agnes <- hcut(g.dist, k = 3,hc_func='agnes')
+Basilea$agnes=res.agnes$cluster
+res.diana <- hcut(g.dist, k = 3,hc_func='diana')
+Basilea$diana=res.diana$cluster
+
+```
+
+```{r, echo=FALSE}
+fviz_silhouette(res.pam)
+
+```
+
+```{r, echo=FALSE}
+fviz_silhouette(res.agnes)
+```
+
+```{r, echo=FALSE}
+fviz_silhouette(res.diana)
+```
+Usaremos Diana pq->
+Es ideal la silueta de clusters en diana porque la mayoría sus valores estan por encima de la linea del cero. 
+
+
+```{r, echo=FALSE}
+aggregate(data=Basilea,.~diana,FUN=mean)
+
+```
+
+
+
+
+```{r, echo=FALSE}
+Basilea$diana = factor(Basilea$diana, 
+                    levels = c(1:2), 
+                    labels = c("GG","HH"))
+
+```
+
+```{r, echo=FALSE}
+fviz_dend(res.diana, cex = 0.4, horiz = T)
+
+```
+
+```{r, echo=FALSE}
+proyeccion = cmdscale(g.dist, k=2
+                      ,add = T) 
+Basilea$dim1 = proyeccion$points[,1]
+Basilea$dim2 = proyeccion$points[,2]
+base= ggplot(Basilea,aes(x=dim1, y=dim2,label=row.names(Basilea))) 
+base + geom_text(size=2, aes(color=as.factor(diana)))  + labs(title = "DIANA")
+
+```
+
+
+```{r, echo=FALSE}
+anova(rg1)
+str(anova)
+```
+
+
+
+
+Entrega FINAL: FFFFFFFFFFFFFFFFFFF
+
+```{r}
+AccesoAgua = read.csv("https://raw.githubusercontent.com/JimenaHA/Trabajo_Grupal/main/AccesAgua_Data.csv")
+```
+
+```{r}
+AccesoAgua=AccesoAgua[-c(218:271),-c(3:4)
+]
+```
+
+```{r}
+AccesoAgua[AccesoAgua ==  ".." ] = NA
+```
+
+```{r}
+colnames(AccesoAgua) = c("PAÍS","CÓDIGOS PAÍS","NUM")
+```
+
+```{r}
+AccesoAgua$NUM=as.numeric(AccesoAgua$NUM)
+```
+
+
+```{r}
+DataP=merge(DataP, AccesoAgua, by = c("PAÍS","CÓDIGOS PAÍS"))
+```
+
+
+#ANALISIS FACTORIAL EXPLORATORIO (TUKI)
+
+
+```{r}
+NEWDATA=DataP[,c(3,4,6)]
+```
+
+```{r}
+install.packages("polycor")
+library(polycor)
+Factorial=polycor::hetcor(NEWDATA)$correlations
+```
+
+```{r}
+install.packages("ggcorrplot")
+library(ggcorrplot)
+ggcorrplot(Factorial)
+
+```
+
+```{r}
+install.packages("psych")
+library(psych)
+psych::KMO(Factorial)
+
+```
+
+
+```{r}
+cortest.bartlett(Factorial,n=nrow(DataP))$p.value>0.05
+
+```
+```{r}
+install.packages("matrixcalc")
+library(matrixcalc)
+is.singular.matrix(Factorial)
+
+```
+
+```{r}
+fa.parallel(NEWDATA,fm = 'ML', fa = 'fa',correct = T)
+```
+```{r}
+library(GPArotation)
+```
+
+
+```{r}
+resultado <- fa (NEWDATA,
+            nfactors = 1,
+            cor = 'mixed',
+            rotate = "varimax",
+            fm="minres")
+print(resultado$loadings)
+```
+
+```{r}
+print(resultado$loadings,cutoff = 0.5)
+```
+
+```{r}
+fa.diagram(resultado)
+```
+```{r}
+sort(resultado$communality)
+
+```
+
